@@ -1,28 +1,38 @@
-import { useId } from "react";
+import toast from "react-hot-toast";
 import s from "./SearchBox.module.css";
-import PropTypes from 'prop-types';
-function SearchBox({ filter, onFilter }) {
-  const searchFieldId = useId();
+
+export function SearchBox({ onSubmit }) {
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const form = event.target;
+    const value = event.target.elements.search.value;
+
+    if (value.trim() === "") {
+      toast.error("Field can't be empty!");
+      form.reset();
+      return;
+    }
+
+    onSubmit(value);
+    form.reset();
+  };
 
   return (
-    <div className={s.searchBox}>
-      <label className={s.label} htmlFor={searchFieldId}>
-        Find contacts by name
-      </label>
-      <input
-        className={s.input}
-        id={searchFieldId}
-        type="text"
-        value={filter}
-        onChange={(event) => onFilter(event.target.value)}
-      />
-    </div>
+    <header>
+      <form className={s.form} onSubmit={handleSubmit}>
+        <input
+          className={s.input}
+          name="search"
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+        />
+        <button className={s.button__search} type="submit">
+          Search
+        </button>
+      </form>
+    </header>
   );
 }
-SearchBox.propTypes = {
-    value: PropTypes.string.isRequired,
-    onFilter: PropTypes.func.isRequired
-};
-
-
-export default SearchBox;
