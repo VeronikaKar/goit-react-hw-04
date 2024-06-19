@@ -20,7 +20,7 @@ export function SearchBox({ onSubmit }) {
 
   return (
     <header>
-      <form className={s.form} onSubmit={handleSubmit}>
+      <form className="flex items-center gap-4 w-96" onSubmit={handleSubmit}>
         <input
           className={s.input}
           name="search"
