@@ -1,104 +1,92 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
-import { useEffect, useRef, useState, useCallback } from "react";
 import { fetchData } from "../src/service/photosApi.js";
-import { SearchBox, ImageGallery, Loader, ErrorMessage, LoadMoreBtn, ImageModal } from "components";
-import useLocalStorage from "../src/hooks/useLocalStorage.js"; 
-import './index.css'; 
+import {
+  SearchBox,
+  ImageGallery,
+  Loader,
+  ErrorMessage,
+  LoadMoreBtn,
+  ImageModal,
+} from "components";
+import "./index.css";
+
 function App() {
-  const [gallery, setGallery] = useLocalStorage("gallery", []);
-  const [query, setQuery] = useLocalStorage("query", "");
+  const [gallery, setGallery] = useState([]);
+  const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [isLimit, setIsLimit] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [modalIsOpen, setModalIsOpen] = useState(false);
-
-  const page = useRef(1);
-  const img = useRef(null);
-  const modalImg = useRef(null);
-  const isFirstRender = useRef(true);
+  const [modalImg, setModalImg] = useState(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    if (!isFirstRender.current) {
-      window.scrollBy({
-        top: img.current?.getBoundingClientRect().height * 2,
-        behavior: "smooth",
-      });
+    if (query) {
+      const fetchImages = async () => {
+        setIsLoading(true);
+        setIsError(false);
+
+        try {
+          const { data } = await fetchData(query, page);
+          // Append new results to existing gallery
+          setGallery((prevGallery) => [...prevGallery, ...data.results]);
+          // Determine if there are more pages to load
+          setHasMore(data.results.length > 0 && page < data.total_pages);
+        } catch (error) {
+          setIsError(true);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchImages();
     }
-  }, [gallery]);
+  }, [query, page]); // Dependency on query and page
 
-  const handleSearchQuery = useCallback(async (searchQuery) => {
-    try {
-      setGallery([]);
-      setIsLoading(true);
-      setIsError(false);
-      setIsLimit(false);
-      setQuery(searchQuery);
+  const handleSearchQuery = (searchQuery) => {
+    setQuery(searchQuery);
+    setPage(1); // Reset page to 1 when performing a new search
+    setGallery([]); // Clear existing gallery on new search
+    setHasMore(true); // Reset hasMore to true for new search
+    setModalIsOpen(false); // Close modal on new search
+  };
 
-      page.current = 1;
-
-      const { data } = await fetchData(searchQuery, page.current);
-
-      setGallery(data.results);
-
-      if (data.total_pages > page.current) {
-        setIsLimit(true);
-      }
-    } catch (error) {
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
+  const handleLoadMore = () => {
+    if (!isLoading && hasMore) {
+      setPage((prevPage) => prevPage + 1); // Increment page if there are more results
     }
-  }, [setGallery, setQuery]);
+  };
 
-  const handleLoadMore = useCallback(async () => {
-    try {
-      setIsLoading(true);
-
-      page.current += 1;
-      isFirstRender.current = false;
-
-      const { data } = await fetchData(query, page.current);
-
-      setGallery((prevGallery) => [...prevGallery, ...data.results]);
-
-      if (page.current >= data.total_pages) {
-        setIsLimit(false);
-      }
-    } catch (error) {
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [query, setGallery]);
-
-  const handleImgClick = useCallback((url, alt) => {
-    modalImg.current = { url, alt };
+  const handleImgClick = (url, alt) => {
+    setModalImg({ url, alt });
     setModalIsOpen(true);
-  }, []);
+  };
 
-  const handleModalClick = useCallback((event) => {
-    if (event.target.nodeName !== "DIV") return;
+  const handleModalClose = () => {
     setModalIsOpen(false);
-  }, []);
+  };
 
   return (
     <div className="app-container">
-      <h1 className="app-title">Image Gallery App</h1>
       <Toaster position="top-right" reverseOrder={false} />
       <SearchBox onSubmit={handleSearchQuery} />
       {gallery.length > 0 && (
-        <ImageGallery onClick={handleImgClick} ref={img} gallery={gallery} />
+        <ImageGallery onClick={handleImgClick} gallery={gallery} />
       )}
       {isLoading && <Loader />}
       {isError && <ErrorMessage />}
-      {isLimit && !isLoading && <LoadMoreBtn onClick={handleLoadMore} />}
       {modalIsOpen && (
         <ImageModal
-          onClick={handleModalClick}
           modalIsOpen={modalIsOpen}
-          onRequestClose={() => setModalIsOpen(false)}
-          modalImg={modalImg.current}
+          onRequestClose={handleModalClose}
+          modalImg={modalImg}
         />
+      )}
+      {hasMore && (
+        <div className="load-more-container">
+          <LoadMoreBtn onClick={handleLoadMore} />
+        </div>
       )}
     </div>
   );

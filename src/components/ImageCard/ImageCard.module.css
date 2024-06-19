@@ -1,19 +1,19 @@
 .wrapper {
-  height: 100%;
-  width: 100%;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-.wrapper img {
-  width: 100%;
-  height: auto;
-  display: block;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  height: 100%;
 }
 
 .wrapper:hover {
-  transform: scale(1.05);
-  cursor: pointer;
+  transform: translateY(-5px);
+}
+
+.image__card {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
